@@ -138,6 +138,8 @@ import org.telegram.ui.Components.UndoView;
 
 import java.util.ArrayList;
 
+import de.dmi3y.behaiv.Behaiv;
+
 public class DialogsActivity extends BaseFragment implements NotificationCenter.NotificationCenterDelegate {
     
     private DialogsRecyclerView listView;
@@ -887,6 +889,10 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     @Override
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
+
+        Behaiv behaiv = ApplicationLoader.behaiv();
+        // TODO behaiv.subscribe()
+        behaiv.startCapturing(true);
 
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
@@ -2432,6 +2438,13 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
                     presentFragment(new ChatActivity(args));
                 }
             }
+            ApplicationLoader.behaiv().registerLabel(dialogId+"");
+            new Thread(new Runnable() {
+                @Override
+                public void run() {
+                    ApplicationLoader.behaiv().stopCapturing(false);
+                }
+            }).start();
         }
     }
 

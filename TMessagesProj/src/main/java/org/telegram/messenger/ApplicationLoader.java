@@ -36,6 +36,14 @@ import org.telegram.ui.Components.ForegroundDetector;
 
 import java.io.File;
 
+import de.dmi3y.behaiv.Behaiv;
+import de.dmi3y.behaiv.provider.AudioSettingsProvider;
+import de.dmi3y.behaiv.provider.DayTimeProvider;
+import de.dmi3y.behaiv.provider.GpsProvider;
+import de.dmi3y.behaiv.storage.BehaivStorage;
+import de.dmi3y.behaiv.storage.InternalStorage;
+import de.dmi3y.behaiv.storage.SimpleStorage;
+
 public class ApplicationLoader extends Application {
 
     @SuppressLint("StaticFieldLeak")
@@ -54,6 +62,7 @@ public class ApplicationLoader extends Application {
     public static volatile long mainInterfacePausedStageQueueTime;
 
     public static boolean hasPlayServices;
+    private static volatile Behaiv behaiv;
 
     public static File getFilesDirFixed() {
         for (int a = 0; a < 10; a++) {
@@ -184,6 +193,17 @@ public class ApplicationLoader extends Application {
         new ForegroundDetector(this);
 
         applicationHandler = new Handler(applicationContext.getMainLooper());
+
+        behaiv = new Behaiv.Builder("local_id")
+                .setAlwaysKeepData(true)
+                .setThreshold(10)
+                .setProvider(new DayTimeProvider(), 0)
+                .setProvider(new AudioSettingsProvider.Builder(applicationContext)
+                        .checkHeadsetConnected()
+                        .checkPlayingMusic()
+                        .checkSpeakerEnabled().build(), 1)
+                .setProvider(new GpsProvider(applicationContext), 2)
+                .setStorage(new InternalStorage(applicationContext)).build();
 
         AndroidUtilities.runOnUIThread(ApplicationLoader::startPushService);
     }
@@ -487,5 +507,9 @@ public class ApplicationLoader extends Application {
             return true;
         }
         return false;
+    }
+
+    public static Behaiv behaiv() {
+        return behaiv;
     }
 }
