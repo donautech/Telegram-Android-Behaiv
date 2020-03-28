@@ -10,6 +10,7 @@ package org.telegram.ui.Adapters;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.Color;
 import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.os.Build;
@@ -22,6 +23,7 @@ import android.widget.FrameLayout;
 import android.widget.TextView;
 
 import org.telegram.messenger.AndroidUtilities;
+import org.telegram.messenger.ApplicationLoader;
 import org.telegram.messenger.ContactsController;
 import org.telegram.messenger.DialogObject;
 import org.telegram.messenger.FileLog;
@@ -55,6 +57,11 @@ import java.util.Collections;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager.widget.ViewPager;
 
+import de.dmi3y.behaiv.Behaiv;
+import io.reactivex.rxjava3.core.Observable;
+
+import static java.lang.Long.parseLong;
+
 public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     private Context mContext;
@@ -74,6 +81,8 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
     private boolean isReordering;
     private long lastSortTime;
     private PullForegroundDrawable pullForegroundDrawable;
+    private Long predictedUserId = null;
+    private final Observable<String> prediction;
 
     public DialogsAdapter(Context context, int type, int folder, boolean onlySelect) {
         mContext = context;
@@ -82,6 +91,9 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
         isOnlySelect = onlySelect;
         hasHints = folder == 0 && type == 0 && !onlySelect;
         selectedDialogs = new ArrayList<>();
+        Behaiv behaiv = ApplicationLoader.behaiv();
+        prediction = behaiv.subscribe();
+        behaiv.startCapturing(true);
         if (folderId == 1) {
             SharedPreferences preferences = MessagesController.getGlobalMainSettings();
             showArchiveHint = preferences.getBoolean("archivehint", true);
@@ -423,10 +435,12 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
 
     @Override
     public void onBindViewHolder(RecyclerView.ViewHolder holder, int i) {
+        Long dialogId = 0L;
         switch (holder.getItemViewType()) {
             case 0: {
                 DialogCell cell = (DialogCell) holder.itemView;
                 TLRPC.Dialog dialog = (TLRPC.Dialog) getItem(i);
+                dialogId = dialog.id;
                 TLRPC.Dialog nextDialog = (TLRPC.Dialog) getItem(i + 1);
                 if (folderId == 0) {
                     cell.useSeparator = (i != getItemCount() - 2);
@@ -456,10 +470,18 @@ public class DialogsAdapter extends RecyclerListView.SelectionAdapter {
             case 6: {
                 UserCell cell = (UserCell) holder.itemView;
                 TLRPC.User user = MessagesController.getInstance(currentAccount).getUser(onlineContacts.get(i - 3).user_id);
+                dialogId = (long) user.id;
                 cell.setData(user, null, null, 0);
                 break;
             }
         }
+
+        Long finalDialogId = dialogId;
+        prediction.subscribe(label -> {
+            if(finalDialogId == parseLong(label)){
+                holder.itemView.setBackgroundColor(Color.YELLOW);
+            }
+        });
     }
 
     @Override

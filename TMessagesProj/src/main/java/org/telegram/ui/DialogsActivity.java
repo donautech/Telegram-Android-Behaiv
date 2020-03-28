@@ -890,9 +890,6 @@ public class DialogsActivity extends BaseFragment implements NotificationCenter.
     public boolean onFragmentCreate() {
         super.onFragmentCreate();
 
-        Behaiv behaiv = ApplicationLoader.behaiv();
-        // TODO behaiv.subscribe()
-        behaiv.startCapturing(true);
 
         if (getArguments() != null) {
             onlySelect = arguments.getBoolean("onlySelect", false);
